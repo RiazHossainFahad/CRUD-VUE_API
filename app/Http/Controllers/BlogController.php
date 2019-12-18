@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Blog;
-use App\Http\Resources\BlogResource;
 use App\Http\Requests\BlogRequest;
+use App\Http\Resources\BlogResource;
 use Illuminate\Http\Request;
-
 use Symfony\Component\HttpFoundation\Response;
 
 class BlogController extends Controller
@@ -18,7 +17,7 @@ class BlogController extends Controller
      */
     public function index()
     {
-        return BlogResource::collection(Blog::latest()->get());
+        return BlogResource::collection(Blog::latest()->paginate(5));
     }
 
     /**
@@ -43,7 +42,7 @@ class BlogController extends Controller
         $blog->body = $request->body;
         $blog->save();
         return response([
-            'data' => new BlogResource($blog)
+            'data' => new BlogResource($blog),
         ], Response::HTTP_CREATED);
     }
 
@@ -67,9 +66,8 @@ class BlogController extends Controller
      */
     public function update(Request $request, Blog $blog)
     {
-        $blog->title = $request->title ?? $blog->title;
 
-        if ($request->title) {
+        if ($request->title && $blog->title != $request->title) {
 
             /**Generate Slug for the title */
             $slug = str_slug($request->title);
@@ -78,6 +76,7 @@ class BlogController extends Controller
             if (Blog::where('slug', $slug)->first()) {
                 $slug = $slug . '-' . uniqid();
             }
+            $blog->title = $request->title ?? $blog->title;
             $blog->slug = $slug;
         }
         $blog->body = $request->body ?? $blog->body;
